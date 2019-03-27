@@ -17,7 +17,7 @@ int onebyte_release(struct inode *inode, struct file *filep);
 ssize_t onebyte_read(struct file *filep, char *buf, size_t count, loff_t *f_pos);
 ssize_t onebyte_write(struct file *filep, const char *buf, size_t count, loff_t *f_pos);
 
-static void onebyte_init(void);
+static int onebyte_init(void);
 static void onebyte_exit(void);
 
 /* file_operation structure */
@@ -43,14 +43,16 @@ int onebyte_release(struct inode *inode, struct file *filep)
 ssize_t onebyte_read(struct file *filep, char *buf, size_t count, loff_t *f_pos)
 {
 	// to be completed
+	return 0;
 }
 
 ssize_t onebyte_write(struct file *filep, const char *buf, size_t count, loff_t *f_pos)
 {
 	// to be completed
+	return 0;
 }
 
-static void onebyte_init(void)
+static int onebyte_init(void)
 {
 	int result;
 
