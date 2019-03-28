@@ -1,20 +1,18 @@
 #!/bin/sh
-module="onebyte"
+module="onebyte.ko"
 device="onebyte"
 mode="664"
-major=61
+major=61  # defined in onebyte.c
+group="staff"  # /etc/group
+
 
 # invoke insmod with all arguments we got
-# and use a pathname, as newer modutils don't look in . by default
-/sbin/insmod ./${module}.ko $* || exit 1
+sudo insmod ./${module} $* || exit 1
 
 # remove stale nodes
-rm -f /dev/${device}
+sudo rm -f /dev/${device}
 
-mknod /dev/${device} c $major 0
+sudo mknod /dev/${device} c $major 0
 
-# give appropriate group/permissions, and change the group.
-group="staff"
-
-chgrp $group /dev/${device}
-chmod $mode  /dev/${device}
+sudo chgrp $group /dev/${device}
+sudo chmod $mode  /dev/${device}
