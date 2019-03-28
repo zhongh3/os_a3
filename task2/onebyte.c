@@ -6,7 +6,8 @@
 #include <linux/types.h>
 #include <linux/fs.h>
 #include <linux/proc_fs.h>
-#include <asm/uaccess.h>
+#include <linux/uaccess.h>
+//#include <asm/uaccess.h>
 
 #define MAJOR_NUMBER 61
 
@@ -22,11 +23,18 @@ static void onebyte_exit(void);
 
 /* file_operation structure */
 struct file_operations onebye_fops = {
-	read:		onebyte_read,
-	write:		onebyte_write,
-	open:		onebyte_open,
-	release:	onebyte_release
+	.read =		onebyte_read,
+	.write =	onebyte_write,
+	.open =		onebyte_open,
+	.release =	onebyte_release,
 };
+
+// struct file_operations onebye_fops = {
+// 	read:		onebyte_read,
+// 	write:		onebyte_write,
+// 	open:		onebyte_open,
+// 	release:	onebyte_release
+// };
 
 char *onebyte_data = NULL;
 
@@ -42,8 +50,32 @@ int onebyte_release(struct inode *inode, struct file *filep)
 
 ssize_t onebyte_read(struct file *filep, char *buf, size_t count, loff_t *f_pos)
 {
-	// to be completed
-	return 0;
+	/* To copy from kernel to user space
+	unsigned long copy_to_user(void _ _user *to, 
+							   const void *from, 
+                               unsigned long count);
+                               */
+	ssize_t size_to_read = sizeof(char);  // size of the file
+
+	printk(KERN_NOTICE "onebyte_read: read at offset = 0x%x, count = 0x%lx, sizeof(char) = 0x%x \n", 
+		(int)*f_pos, count, size_to_read);
+
+	// if current reading position is behind the end of the file
+    if( *f_pos >= size_to_read )
+        return 0;  //end-of-file is reached
+
+    // if trying to read more than what we have, read only up to the end of the file
+    if( *f_pos + count > size_to_read )
+        count = size_to_read - *f_pos;   
+
+	if (copy_to_user(buf, onebyte_data, count)){
+
+		return -EFAULT;  // bad address
+	}
+
+	*f_pos += count;
+
+	return count;
 }
 
 ssize_t onebyte_write(struct file *filep, const char *buf, size_t count, loff_t *f_pos)
