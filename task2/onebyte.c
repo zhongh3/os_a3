@@ -9,6 +9,7 @@
 #include <linux/uaccess.h>
 //#include <asm/uaccess.h>
 
+
 #define MAJOR_NUMBER 61
 
 /* forward declaration */
@@ -37,6 +38,7 @@ struct file_operations onebye_fops = {
 // };
 
 char *onebyte_data = NULL;
+ssize_t size_of_file = sizeof(char);  // size of the file
 
 int onebyte_open(struct inode *inode, struct file *filep)
 {
@@ -55,21 +57,21 @@ ssize_t onebyte_read(struct file *filep, char *buf, size_t count, loff_t *f_pos)
 							   const void *from, 
                                unsigned long count);
                                */
-	ssize_t size_to_read = sizeof(char);  // size of the file
 
-	printk(KERN_NOTICE "onebyte_read: read at offset = 0x%x, count = 0x%lx, sizeof(char) = 0x%x \n", 
-		(int)*f_pos, count, size_to_read);
+	printk(KERN_NOTICE "onebyte_read: read at offset = 0x%x, count = 0x%lx, size_of_file = 0x%lx \n", 
+		(int)*f_pos, count, size_of_file);
 
 	// if current reading position is behind the end of the file
-    if( *f_pos >= size_to_read )
-        return 0;  //end-of-file is reached
+    if (*f_pos >= size_of_file){
+    	return 0;  //end-of-file is reached
+    }
 
     // if trying to read more than what we have, read only up to the end of the file
-    if( *f_pos + count > size_to_read )
-        count = size_to_read - *f_pos;   
+    if (*f_pos + count > size_of_file){
+    	count = size_of_file - *f_pos;   
+    }
 
 	if (copy_to_user(buf, onebyte_data, count)){
-
 		return -EFAULT;  // bad address
 	}
 
@@ -80,8 +82,32 @@ ssize_t onebyte_read(struct file *filep, char *buf, size_t count, loff_t *f_pos)
 
 ssize_t onebyte_write(struct file *filep, const char *buf, size_t count, loff_t *f_pos)
 {
-	// to be completed
-	return 0;
+	/* To copy from user space to kernel 
+	unsigned long copy_from_user(void *to, 
+                                 const void _ _user *from, 
+                                 unsigned long count);
+                               */
+	void *p = onebyte_data;
+
+	printk(KERN_NOTICE "onebyte_write: write at offset = 0x%x, count = 0x%lx, size_of_file = 0x%lx \n", 
+	(int)*f_pos, count, size_of_file);
+
+    if (count <= 0){
+    	printk(KERN_ALERT "write error: Invalid count = %ld. \n", count);
+    	return -EPERM; // Operation not permitted
+    }
+
+	if (copy_from_user(p, buf, size_of_file)){
+		return -EFAULT;  // Bad address
+	}
+
+	if (count > size_of_file  - *f_pos){
+    	printk(KERN_ALERT "write error: No space  - offset = 0x%x, count = 0x%lx, size_of_file = 0x%lx \n", 
+    		(int)*f_pos, count, size_of_file);
+    	return -ENOSPC; // No space left on device
+    }
+
+	return count; 
 }
 
 static int onebyte_init(void)
